@@ -17,7 +17,6 @@ if __name__ == '__main__':
     csv_path = 'label/fold_cesc_t2.csv'
     data_path = 'dataset/cesc_t2_png_224'
 
-    # means, stds = nom_para(data_path)
     means = [0.15708263, 0.15708263, 0.15708263] # t2
     stds = [0.13905464, 0.13905464, 0.13905464]
 
@@ -46,11 +45,11 @@ if __name__ == '__main__':
     tpr_l = []
     fpr_m = np.linspace(0, 1, 100)
 
-    for i, rows in enumerate(set_csv): # i: set number, rows: ["['3', 0]", "['30', 1]"]
+    for i, rows in enumerate(set_csv):
         set_list.append(rows)
 
     for s in set_list:
-        test_list = s # ["['9', 0]", "['28', 1]"]
+        test_list = s
         weights_path = './evaluation/weight_auc_0.pth'
         model = torch.load(weights_path)
 

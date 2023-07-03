@@ -5,22 +5,33 @@ from PIL import Image
 import torch
 from torch.utils.data import Dataset
 
+def label_separate(training_list):
+    list_0 = []
+    list_1 = []
+    for tl in training_list:
+        tl_label = tl.split(',')[1].replace("]", '')
+        if int(tl_label) == 0:
+            list_0.append(tl)
+        else:
+            list_1.append(tl)
+    return list_0,list_1
+
 def read_bag(train_list, x, data_path):
     patient_list = []
     label_list = []
     for t in train_list:  # patient level,eg:['3', 0],<class 'str'>
-        patient = int((t.split(',')[0].replace("['", '')).replace("'", '')) + x # 患者编号，如：3
+        patient = int((t.split(',')[0].replace("['", '')).replace("'", '')) + x # patient num
         patient_path = os.path.join(data_path, str(patient))
-        label = t.split(',')[1].replace("]", '') # 患者标签，如：0
+        label = t.split(',')[1].replace("]", '')
         patient_list.append(patient_path)
         label_list.append(label)
-    return patient_list,label_list # 返回患者路径和标签
+    return patient_list,label_list # patient path and label
 
 class aaMILDataset(Dataset):
     def __init__(self, df, transform=None):
-        super(aaMILDataset, self).__init__() # 对继承自父类的属性进行初始化
+        super(aaMILDataset, self).__init__()
         self.df = df
-        self.transform = transform # 默认不数据转换，随用随叫
+        self.transform = transform
 
     def __len__(self):
         return len(self.df)
@@ -29,12 +40,12 @@ class aaMILDataset(Dataset):
         return self.df['label']
 
     def __getitem__(self, idx):
-        row = self.df.iloc[idx] # 根据索引
+        row = self.df.iloc[idx]
         bag_path = row['bag']
         file_list = os.listdir(bag_path)
 
         pixel_list = []
-        file_list.sort(key=lambda x: int((x.split('.')[0]).split('_')[1]))  # 文件排序
+        file_list.sort(key=lambda x: int((x.split('.')[0]).split('_')[1]))
         for f in file_list:
             file_path = os.path.join(bag_path, f)
             im = cv2.imread(file_path)
@@ -46,22 +57,22 @@ class aaMILDataset(Dataset):
             file_path = os.path.join(bag_path, f)
             im = cv2.imread(file_path)
             im_size = im.shape[0] * im.shape[1]
-            if im_size / pixelest >= 0: # mp写不进类里，只能手动改了
+            if im_size / pixelest >= 0:
                 instance_list.append(f)
 
         for i in instance_list:
             instance_path = os.path.join(bag_path, i)
             img = Image.open(instance_path)
             img = self.transform(img)
-            img = torch.unsqueeze(img, dim=0) # 增加一个维度，(3,64,64)变为(1,3,64,64)
+            img = torch.unsqueeze(img, dim=0)
             if instance_list.index(i) == 0:
-                bag = img  # 第一个tensor不需要拼接
+                bag = img
             else:
                 bag = torch.cat((bag, img), 0)
 
         label = row['label']
-        label = np.array(int(label)) # 不能是浮点
-        label = torch.from_numpy(label) # 变成tensor
-        label = label.long() # 变成long
+        label = np.array(int(label))
+        label = torch.from_numpy(label)
+        label = label.long()
 
-        return bag_path, bag, label # 输出患者为了测试中的后续分析，模型仅需要后两个输出
+        return bag_path, bag, label

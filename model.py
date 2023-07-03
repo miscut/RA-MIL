@@ -6,15 +6,15 @@ import torchvision.models as models
 class RA_MIL(nn.Module):
     def __init__(self):
         super(RA_MIL, self).__init__()
-        self.L = 1000 # 500, #1000 & 500
-        self.D = 500 # 128
+        self.L = 1000
+        self.D = 500
         self.K = 1
 
         # resnet50
         self.feature_extractor_part1 = torch.nn.Sequential(*list(models.resnet50(pretrained=True).children())[:-2])
 
         self.feature_extractor_part2 = nn.Sequential(
-            nn.Linear(2048 * 7 * 7, self.L), #  to 512
+            nn.Linear(2048 * 7 * 7, self.L),
             nn.ReLU(),
             nn.Dropout(p=0.5)
         )
@@ -37,12 +37,12 @@ class RA_MIL(nn.Module):
         )
 
     def forward(self, x):
-        x = x.squeeze(0) # 删除第0维
+        x = x.squeeze(0) # delete 0th dimension
 
         H = self.feature_extractor_part1(x)
         H = H.view(-1, 2048 * 7 * 7)
         H = self.feature_extractor_part2(H)  # 20*1000
-        posib = self.rank_part(H)  # 2 or 1
+        posib = self.rank_part(H)
         posib = torch.transpose(posib, 1, 0)  # use attention score to rank
         posib = F.softmax(posib, dim=1) #1
         rank = torch.sort(posib,descending=True) # # rank attention score
